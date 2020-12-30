@@ -1,6 +1,5 @@
 from pycookiecheat import chrome_cookies
 import requests
-from prettyprinter import pprint
 
 # How many contacts to fetch in each request
 PAGE_SIZE = 100
@@ -20,9 +19,10 @@ def fetch_contacts() -> list:
         cookies = chrome_cookies(url)
         response = requests.get(url, cookies=cookies).json()
 
-        # Save the contacts
+        # Save each contact
         for contact in response["contacts"]:
 
+            # Guarantee that these keys are present
             if "first_name" not in contact.keys():
                 contact["first_name"] = ""
             if "last_name" not in contact.keys():
@@ -37,12 +37,26 @@ def fetch_contacts() -> list:
     return contacts
 
 
+def locate_photo(contact: dict):
 
+    try:
+        filename = "./photos/" + contact["first_name"] + " " + contact["last_name"] + ".jpg"
+        photo = open(filename, "rb")
+        photo.close()
+    except FileNotFoundError:
+        try :
+            filename = "./photos/" + contact["first_name"] + "  " + contact["last_name"] + ".jpg"
+            photo = open(filename, "rb")
+            photo.close()
+        except FileNotFoundError:
+            print("Error: No picture found for %s %s" % (contact["first_name"], contact["last_name"]))
 
 
 def main():
     contacts = fetch_contacts()
-    pprint(contacts)
+
+    for contact in contacts:
+        locate_photo(contact)
 
 
 
