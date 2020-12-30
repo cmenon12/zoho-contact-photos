@@ -1,4 +1,5 @@
 import configparser
+from typing import BinaryIO
 
 import requests
 from pycookiecheat import chrome_cookies
@@ -44,45 +45,47 @@ def fetch_contacts() -> list:
     return contacts
 
 
-def locate_photo(contact: dict, config: configparser.ConfigParser):
-    photos_uploaded_count = 0
+def locate_photo(contact: dict,
+                 config: configparser.SectionProxy,
+                 upload=True) -> bool:
+    result = False
 
-    # Attempt to find the photo at first_name last_name.jpg
-    try:
-        filepath = "./%s/%s %s.jpg" % (config["photo_folder"], contact["first_name"], contact["last_name"])
-        photo = open(filepath, "rb")
-        upload_photo(contact, photo, config["csrf_token"])
-        photos_uploaded_count += 1
-        photo.close()
-    except FileNotFoundError:
+    # Check for filenames with 0, 1, or 2 spaces between the names
+    for n in range(0, 3):
 
-        # If not, try to find the photo at first_name  last_name.jpg
         try:
-            filepath = "./%s/%s  %s.jpg" % (config["photo_folder"], contact["first_name"], contact["last_name"])
+            # Create the filepath and attempt to open it
+            filepath = "./%s/%s%s%s.jpg" % (config["photo_folder"],
+                                            contact["first_name"],
+                                            " " * n, contact["last_name"])
             photo = open(filepath, "rb")
-            upload_photo(contact, photo, config["csrf_token"])
-            photos_uploaded_count += 1
+
+            # Upload it, save that it was successful, and break out
+            if upload:
+                upload_photo(contact, photo)
             photo.close()
+            result = True
+            break
+
+        # File was not found, so pass
         except FileNotFoundError:
-            print("Error: No photo found for %s %s" % (contact["first_name"], contact["last_name"]))
+            pass
 
-    print("%d photos were uploaded" % photos_uploaded_count)
+    return result
 
 
-def upload_photo(contact: dict, photo: str, csrf_token: str):
+def upload_photo(contact: dict, photo: BinaryIO):
     # Make the request
     url = "https://mail.zoho.com/zm/zc/api/v1/accounts/%s/contacts/%s/photo" % (contact["zid"], contact["contact_id"])
     cookies = chrome_cookies(url)
     files = {"photo": photo}
-    headers = {'x-zcsrf-token': csrf_token}
+    headers = {"x-zcsrf-token": "conreqcsr=%s" % cookies["CSRF_TOKEN"]}
     response = requests.post(url, cookies=cookies, files=files, headers=headers)
     response.raise_for_status()
 
+    # Inform the user if it was successful
     if response.json()["status_code"] == 200 and response.json()["message"] == "Photo Uploaded":
         print("Photo updated for %s %s" % (contact["first_name"], contact["last_name"]))
-    SystemExit
-
-    pass
 
 
 def main():
@@ -91,10 +94,17 @@ def main():
     parser.read("config.ini")
     config = parser["update-photos"]
 
+    # Get all the contacts
     contacts = fetch_contacts()
 
+    # Upload a photo for each contact
+    photos_uploaded = 0
     for contact in contacts:
-        locate_photo(contact, config)
+        if locate_photo(contact, config):
+            photos_uploaded += 1
+        else:
+            print("No photo found for %s %s" % (contact["first_name"], contact["last_name"]))
+    print("Photos were uploaded for %d out of %d contacts." % (photos_uploaded, len(contacts)))
 
 
 if __name__ == "__main__":
