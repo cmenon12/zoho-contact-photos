@@ -1,3 +1,5 @@
+"""Adds photos to the user's contacts."""
+import sys
 from typing import BinaryIO, Optional
 
 import requests
@@ -31,8 +33,7 @@ def fetch_contacts() -> list:
         print("Downloading page %d..." % page_number)
         url = "https://contacts.zoho.com/api/v1/accounts/self/contacts?page=%d&per_page=%d" \
               % (page_number, PAGE_SIZE)
-        cookies = chrome_cookies(url)
-        response = requests.get(url, cookies=cookies)
+        response = requests.get(url, cookies=get_cookies(url))
         response.raise_for_status()
 
         # Save each contact
@@ -94,7 +95,7 @@ def upload_photo(contact: dict, photo: BinaryIO):
     # Make the request
     url = "https://mail.zoho.com/zm/zc/api/v1/accounts/%s/contacts/%s/photo" \
           % (contact["zid"], contact["contact_id"])
-    cookies = chrome_cookies(url)
+    cookies = get_cookies(url)
     files = {"photo": photo}
     headers = {"x-zcsrf-token": "conreqcsr=%s" % cookies["CSRF_TOKEN"]}
     response = requests.post(url, cookies=cookies, files=files,
@@ -110,6 +111,25 @@ def upload_photo(contact: dict, photo: BinaryIO):
         print("There was an error updating the photo for %s %s" %
               (contact["first_name"], contact["last_name"]))
         print(response.text)
+
+
+def get_cookies(url) -> dict:
+    """Gets the cookies, or tells the user how to fix the error.
+
+    :param url: the URL that the cookies should be fetched for
+    :type url: string
+    :return: the cookies
+    :rtype: dict
+    """
+
+    try:
+        return chrome_cookies(url)
+    except Exception as e:
+        print("There was an error getting the cookies. "
+              "Please see https://github.com/n8henrie/pycookiecheat "
+              "for how to fix this.")
+        print(e)
+        sys.exit()
 
 
 def main():
