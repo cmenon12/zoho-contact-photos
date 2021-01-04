@@ -88,8 +88,8 @@ def upload_photo(contact: dict, photo: BinaryIO):
 
     :param contact: the contact to upload the photo for
     :type contact: dict
-    :param: the photo binary data
-    :type: BinaryIO
+    :param photo: the photo binary data
+    :type photo: BinaryIO
     """
 
     # Make the request
