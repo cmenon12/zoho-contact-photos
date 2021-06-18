@@ -1,3 +1,22 @@
+"""Script to add photos to Zoho contacts.
+
+This script downloads a list of all the user's contacts from Zoho Mail,
+attempts to locate a photo for each one, and if found it uploads that
+photo to the contact.
+
+It relies on the backdoor solution of using the user's cookies in Chrome
+to grant access to Zoho Mail. This is partly because adding a photo to a
+contact is not part of their
+[official API](https://www.zoho.com/contacts/api/overview.html).
+
+The contact photos are stored in a folder (named `photos` by default)
+and are saved in the format `*Firstname*Lastname*.jpg`. The `*` is a
+wildcard that represents anything, so suffixes and prefixes won't cause
+photos to be missed. You can get these photos anywhere, but I was able
+to source mine from my Google Contacts using
+[Google Takeout](https://takeout.google.com/).
+"""
+
 import fnmatch
 import os
 from typing import BinaryIO, Optional
@@ -68,7 +87,7 @@ def locate_photo(contact: dict) -> Optional[BinaryIO]:
     """
 
     # Search for matching photos
-    for root, dirs, files in os.walk("./%s" % PHOTOS_FOLDER):
+    for _, _, files in os.walk("./%s" % PHOTOS_FOLDER):
         pattern = "*%s*%s*.jpg" % (contact["first_name"], contact["last_name"])
         matching = fnmatch.filter(files, pattern)
 
@@ -80,19 +99,20 @@ def locate_photo(contact: dict) -> Optional[BinaryIO]:
         # If multiple matched then get the user to choose
         elif len(matching) >= 2:
             if "primary_email_id" in contact:
-                print("\nMultiple photos were found for %s %s with email %s. Please pick one." % (
-                contact["first_name"], contact["last_name"], contact["primary_email_id"]))
+                print("\nMultiple photos were found for %s %s with email %s. Please pick one." %
+                      (contact["first_name"], contact["last_name"], contact["primary_email_id"]))
             else:
-                print("\nMultiple photos were found for %s %s with no email address. Please pick one." % (
-                contact["first_name"], contact["last_name"]))
+                print("\nMultiple photos were found for %s %s with no email address. Please pick one." %
+                      (contact["first_name"], contact["last_name"]))
             for photo in matching:
                 print("%d - %s" % (matching.index(photo), photo))
             choice = -1
             while choice not in range(0, len(matching)):
-                user_input = input("Enter a number from 0 to %d. " % (len(matching) - 1))
+                user_input = input("Enter a number from 0 to %d. " %
+                                   (len(matching) - 1))
                 try:
                     choice = int(user_input)
-                except:
+                except ValueError:
                     pass
             photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
             return photo
@@ -106,8 +126,8 @@ def upload_photo(contact: dict, photo: BinaryIO):
 
     :param contact: the contact to upload the photo for
     :type contact: dict
-    :param: the photo binary data
-    :type: BinaryIO
+    :param photo: the photo to upload
+    :type photo: BinaryIO
     """
 
     # Make the request
