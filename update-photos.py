@@ -13,6 +13,9 @@ PAGE_SIZE = 100
 # The name of the folder with the contact photos
 PHOTOS_FOLDER = "photos"
 
+# The path to the cookie file
+COOKIE_FILE = "/home/chris/.config/google-chrome/Default/Cookies"
+
 
 def fetch_contacts() -> list:
     """Fetches all of the user's Zoho contacts.
@@ -31,7 +34,7 @@ def fetch_contacts() -> list:
         print("Downloading page %d..." % page_number)
         url = "https://contacts.zoho.com/api/v1/accounts/self/contacts?page=%d&per_page=%d" \
               % (page_number, PAGE_SIZE)
-        cookies = chrome_cookies(url)
+        cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
         response = requests.get(url, cookies=cookies)
         response.raise_for_status()
 
@@ -94,7 +97,7 @@ def upload_photo(contact: dict, photo: BinaryIO):
     # Make the request
     url = "https://mail.zoho.com/zm/zc/api/v1/accounts/%s/contacts/%s/photo" \
           % (contact["zid"], contact["contact_id"])
-    cookies = chrome_cookies(url)
+    cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
     files = {"photo": photo}
     headers = {"x-zcsrf-token": "conreqcsr=%s" % cookies["CSRF_TOKEN"]}
     response = requests.post(url, cookies=cookies, files=files,
