@@ -1,3 +1,2 @@
 pycookiecheat
 requests
-configparser
