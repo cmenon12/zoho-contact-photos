@@ -19,7 +19,7 @@ to source mine from my Google Contacts using
 
 import fnmatch
 import os
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Optional, Tuple
 
 import requests
 from pycookiecheat import chrome_cookies
@@ -77,48 +77,52 @@ def fetch_contacts() -> list:
     return contacts
 
 
-def locate_photo(contact: dict) -> Optional[BinaryIO]:
+def locate_photo(contact: dict, photo_files: list) -> Tuple[Optional[BinaryIO], list]:
     """Attempts to locate the photo for the contact in the folder.
 
     :param contact: the contact to find the photo for
     :type contact: dict
-    :return: the photo binary data, or None if it can't be found
-    :rtype: Optional[BinaryIO]
+    :param photo_files: the remaining photo files
+    :type photo_files: list
+    :return: the photo binary data, or None if it can't be found,
+    and the updated photo files
+    :rtype: Tuple[Optional[BinaryIO], list]
     """
 
     # Search for matching photos
-    for _, _, files in os.walk("./%s" % PHOTOS_FOLDER):
-        pattern = "*%s*%s*.jpg" % (contact["first_name"], contact["last_name"])
-        matching = fnmatch.filter(files, pattern)
+    pattern = "*%s*%s*.jpg" % (contact["first_name"], contact["last_name"])
+    matching = fnmatch.filter(photo_files, pattern)
 
-        # If there was exactly one match
-        if len(matching) == 1:
-            photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[0]), "rb")
-            return photo
+    # If there was exactly one match
+    if len(matching) == 1:
+        photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[0]), "rb")
+        photo_files.remove(matching[0])
+        return photo, photo_files
 
-        # If multiple matched then get the user to choose
-        elif len(matching) >= 2:
-            if "primary_email_id" in contact:
-                print("\nMultiple photos were found for %s %s with email %s. Please pick one." %
-                      (contact["first_name"], contact["last_name"], contact["primary_email_id"]))
-            else:
-                print("\nMultiple photos were found for %s %s with no email address. Please pick one." %
-                      (contact["first_name"], contact["last_name"]))
-            for photo in matching:
-                print("%d - %s" % (matching.index(photo), photo))
-            choice = -1
-            while choice not in range(0, len(matching)):
-                user_input = input("Enter a number from 0 to %d. " %
-                                   (len(matching) - 1))
-                try:
-                    choice = int(user_input)
-                except ValueError:
-                    pass
-            photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
-            return photo
-
+    # If multiple matched then get the user to choose
+    elif len(matching) >= 2:
+        if "primary_email_id" in contact:
+            print("\nMultiple photos were found for %s %s with email %s. Please pick one." %
+                  (contact["first_name"], contact["last_name"], contact["primary_email_id"]))
         else:
-            return None
+            print("\nMultiple photos were found for %s %s with no email address. Please pick one." %
+                  (contact["first_name"], contact["last_name"]))
+        for photo in matching:
+            print("%d - %s" % (matching.index(photo), photo))
+        choice = -1
+        while choice not in range(0, len(matching)):
+            user_input = input("Enter a number from 0 to %d. " %
+                               (len(matching) - 1))
+            try:
+                choice = int(user_input)
+            except ValueError:
+                pass
+        photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
+        photo_files.remove(matching[choice])
+        return photo, photo_files
+
+    else:
+        return None, photo_files
 
 
 def upload_photo(contact: dict, photo: BinaryIO):
@@ -158,22 +162,30 @@ def main():
     # Get all the contacts
     contacts = fetch_contacts()
 
-    # Upload a photo for each contact
-    photos_uploaded = 0
-    for contact in contacts:
-        photo = locate_photo(contact)
+    # Keep track of all the photos
+    for _, _, files in os.walk("./%s" % PHOTOS_FOLDER):
+        photo_files = files
 
-        # If the photo was found then upload it, otherwise skip it
-        if photo is not None:
-            upload_photo(contact, photo)
-            photos_uploaded += 1
-        else:
-            print("No photo found for %s %s" % (contact["first_name"],
-                                                contact["last_name"]))
+        # Upload a photo for each contact
+        photos_uploaded = 0
+        for contact in contacts:
+            photo, photo_files = locate_photo(contact, photo_files)
 
-    # Print a summary
-    print("Photos were uploaded for %d out of %d contacts." %
-          (photos_uploaded, len(contacts)))
+            # If the photo was found then upload it, otherwise skip it
+            if photo is not None:
+                upload_photo(contact, photo)
+                photos_uploaded += 1
+            else:
+                print("No photo found for %s %s" % (contact["first_name"],
+                                                    contact["last_name"]))
+
+        # Print a summary
+        print("\nPhotos were uploaded for %d out of %d contacts." %
+              (photos_uploaded, len(contacts)))
+        if len(photo_files) > 0:
+            print("\nNo contact was found for these photos, so they weren't uploaded.")
+            for photo in photo_files:
+                print(" - %s" % photo)
 
 
 if __name__ == "__main__":
