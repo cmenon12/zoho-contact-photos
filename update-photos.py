@@ -1,3 +1,5 @@
+import fnmatch
+import os
 from typing import BinaryIO, Optional
 
 import requests
@@ -32,7 +34,7 @@ def fetch_contacts() -> list:
 
         # Make the request
         print("Downloading page %d..." % page_number)
-        url = "https://contacts.zoho.com/api/v1/accounts/self/contacts?page=%d&per_page=%d" \
+        url = "https://contacts.zoho.com/api/v1/accounts/self/contacts?page=%d&per_page=%d&include=emails.primary" \
               % (page_number, PAGE_SIZE)
         cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
         response = requests.get(url, cookies=cookies)
@@ -65,24 +67,38 @@ def locate_photo(contact: dict) -> Optional[BinaryIO]:
     :rtype: Optional[BinaryIO]
     """
 
-    # Check for filenames with 0, 1, or 2 spaces between the names
-    for n in range(0, 3):
+    # Search for matching photos
+    for root, dirs, files in os.walk("./%s" % PHOTOS_FOLDER):
+        pattern = "*%s*%s*.jpg" % (contact["first_name"], contact["last_name"])
+        matching = fnmatch.filter(files, pattern)
 
-        try:
-            # Create the filepath and attempt to open it
-            filepath = "./%s/%s%s%s.jpg" % (PHOTOS_FOLDER,
-                                            contact["first_name"],
-                                            " " * n, contact["last_name"])
-            photo = open(filepath, "rb")
-
-            # Return the photo
+        # If there was exactly one match
+        if len(matching) == 1:
+            photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[0]), "rb")
             return photo
 
-        # File was not found, so pass
-        except FileNotFoundError:
-            pass
+        # If multiple matched then get the user to choose
+        elif len(matching) >= 2:
+            if "primary_email_id" in contact:
+                print("\nMultiple photos were found for %s %s with email %s. Please pick one." % (
+                contact["first_name"], contact["last_name"], contact["primary_email_id"]))
+            else:
+                print("\nMultiple photos were found for %s %s with no email address. Please pick one." % (
+                contact["first_name"], contact["last_name"]))
+            for photo in matching:
+                print("%d - %s" % (matching.index(photo), photo))
+            choice = -1
+            while choice not in range(0, len(matching)):
+                user_input = input("Enter a number from 0 to %d. " % (len(matching) - 1))
+                try:
+                    choice = int(user_input)
+                except:
+                    pass
+            photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
+            return photo
 
-    return None
+        else:
+            return None
 
 
 def upload_photo(contact: dict, photo: BinaryIO):
