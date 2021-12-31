@@ -139,7 +139,7 @@ def upload_photo(contact: dict, photo: BinaryIO):
           % (contact["zid"], contact["contact_id"])
     cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
     files = {"photo": photo}
-    headers = {"x-zcsrf-token": "conreqcsr=%s" % cookies["CSRF_TOKEN"]}
+    headers = {"x-zcsrf-token": "conreqcsr=%s" % cookies["CT_CSRF_TOKEN"]}
     response = requests.post(url, cookies=cookies, files=files,
                              headers=headers)
     response.raise_for_status()
