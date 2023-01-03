@@ -2,11 +2,12 @@
 This is a Python script that adds photos to the user's contacts in [Zoho Contacts in Zoho Mail](https://www.zoho.com/mail/help/contacts.html). 
 
 ## Description
-This script downloads a list of all the user's contacts from Zoho Mail, attempts to locate a photo for each one, and if found it uploads that photo to the contact.
+This script downloads a list of all the user's contacts from Zoho Mail, attempts to locate a photo for each one, and if
+found it uploads that photo to the contact.
 
 It relies on the backdoor solution of using the user's cookies in Chrome to grant access to Zoho Mail. This is partly
-because adding a photo to a contact is not part of their [official API](https://www.zoho.com/contacts/api/overview.html)
-.
+because adding a photo to a contact is not part of
+their [official API](https://www.zoho.com/contacts/api/overview.html).
 
 The contact photos are stored in a folder (named `photos` by default) and are saved in the
 format `*Firstname*Lastname*.jpg`. The `*` is a wildcard that represents anything, so suffixes and prefixes won't cause
