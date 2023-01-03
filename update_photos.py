@@ -39,7 +39,7 @@ COOKIE_FILE = "/home/chris/.config/google-chrome/Default/Cookies"
 
 
 def fetch_contacts() -> list:
-    """Fetches all of the user's Zoho contacts.
+    """Fetches all the user's Zoho contacts.
 
     :returns: all the contacts from Zoho.
     :rtype: list
@@ -52,9 +52,8 @@ def fetch_contacts() -> list:
     while has_more:
 
         # Make the request
-        print("Downloading page %d..." % page_number)
-        url = "https://contacts.zoho.com/api/v1/accounts/self/contacts?page=%d&per_page=%d&include=emails.primary" \
-              % (page_number, PAGE_SIZE)
+        print(f"Downloading page {page_number}...")
+        url = f"https://contacts.zoho.com/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
         cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
         response = requests.get(url, cookies=cookies)
         response.raise_for_status()
@@ -89,37 +88,36 @@ def locate_photo(contact: dict, photo_files: list) -> Tuple[Optional[BinaryIO], 
     :rtype: Tuple[Optional[BinaryIO], list]
     """
 
-    # Search for matching photos
-    pattern = "*%s*%s*.jpg" % (contact["first_name"], contact["last_name"])
-    matching = fnmatch.filter(photo_files, pattern)
+    names = [f"{contact['first_name']}*{contact['last_name']}"]
+    if "company" in contact.keys():
+        names.append(f"{contact['company']}")
 
-    # If there was exactly one match
-    if len(matching) == 1:
-        photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[0]), "rb")
-        photo_files.remove(matching[0])
-        return photo, photo_files
+    for name in names:
 
-    # If multiple matched then get the user to choose
-    elif len(matching) >= 2:
-        if "primary_email_id" in contact:
-            print("\nMultiple photos were found for %s %s with email %s. Please pick one." %
-                  (contact["first_name"], contact["last_name"], contact["primary_email_id"]))
-        else:
-            print("\nMultiple photos were found for %s %s with no email address. Please pick one." %
-                  (contact["first_name"], contact["last_name"]))
-        for photo in matching:
-            print("%d - %s" % (matching.index(photo), photo))
-        choice = -1
-        while choice not in range(0, len(matching)):
-            user_input = input("Enter a number from 0 to %d. " %
-                               (len(matching) - 1))
-            try:
-                choice = int(user_input)
-            except ValueError:
-                pass
-        photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
-        photo_files.remove(matching[choice])
-        return photo, photo_files
+        # Search for matching photos
+        matching = fnmatch.filter(photo_files, f"*{name}*")
+
+        # If there was exactly one match
+        if len(matching) == 1:
+            photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[0]), "rb")
+            photo_files.remove(matching[0])
+            return photo, photo_files
+
+        # If multiple matched then get the user to choose
+        elif len(matching) >= 2:
+            print(f"\nMultiple photos were found for {name} with {contact['primary_email_id'] if 'primary_email_id' in contact else 'no email address'}. Please pick one.")
+            for photo in matching:
+                print(f"{matching.index(photo)} - {photo}")
+            choice = -1
+            while choice not in range(0, len(matching)):
+                user_input = input(f"Enter a number from 0 to {len(matching) - 1}. ")
+                try:
+                    choice = int(user_input)
+                except ValueError:
+                    pass
+            photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
+            photo_files.remove(matching[choice])
+            return photo, photo_files
 
     else:
         return None, photo_files
@@ -135,11 +133,10 @@ def upload_photo(contact: dict, photo: BinaryIO):
     """
 
     # Make the request
-    url = "https://mail.zoho.com/zm/zc/api/v1/accounts/%s/contacts/%s/photo" \
-          % (contact["zid"], contact["contact_id"])
+    url = f"https://mail.zoho.com/zm/zc/api/v1/accounts/{contact['zid']}/contacts/{contact['contact_id']}/photo"
     cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
     files = {"photo": photo}
-    headers = {"x-zcsrf-token": "conreqcsr=%s" % cookies["CT_CSRF_TOKEN"]}
+    headers = {"x-zcsrf-token": f"conreqcsr={cookies['CT_CSRF_TOKEN']}"}
     response = requests.post(url, cookies=cookies, files=files,
                              headers=headers)
     response.raise_for_status()
@@ -147,11 +144,9 @@ def upload_photo(contact: dict, photo: BinaryIO):
     # Inform the user if it was successful
     if response.json()["status_code"] == 200 and \
             response.json()["message"] == "Photo Uploaded":
-        print("Photo updated for %s %s" % (contact["first_name"],
-                                           contact["last_name"]))
+        print(f"Photo updated for {contact['first_name']} {contact['last_name']}")
     else:
-        print("There was an error updating the photo for %s %s" %
-              (contact["first_name"], contact["last_name"]))
+        print(f"There was an error updating the photo for {contact['first_name']} {contact['last_name']}")
         print(response.text)
 
 
@@ -176,16 +171,14 @@ def main():
                 upload_photo(contact, photo)
                 photos_uploaded += 1
             else:
-                print("No photo found for %s %s" % (contact["first_name"],
-                                                    contact["last_name"]))
+                print(f"No photo found for {contact['first_name']} {contact['last_name']}")
 
         # Print a summary
-        print("\nPhotos were uploaded for %d out of %d contacts." %
-              (photos_uploaded, len(contacts)))
+        print(f"\nPhotos were uploaded for {photos_uploaded} out of {len(contacts)} contacts.")
         if len(photo_files) > 0:
             print("\nNo contact was found for these photos, so they weren't uploaded.")
             for photo in photo_files:
-                print(" - %s" % photo)
+                print(f" - {photo}")
 
 
 if __name__ == "__main__":
