@@ -34,7 +34,8 @@
   "patch": {
     "groupName": "all patch updates",
     "automerge": true,
-    "description": "Group and automerge all patch updates together"
+    "schedule": "every 3 months on the first day of the month",
+    "description": "Group and automerge all patch updates together at the start of each quarter"
   },
   "minor": {
     "dependencyDashboardApproval": true,
