@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "dependencyDashboardFooter": "View the logs [here](https://developer.mend.io/github/cmenon12/zoho-contact-photos).",
+  "assignees": ["cmenon12"],
+  "commitMessageExtra": "{{#if isPinDigest}}from {{{currentDigestShort}}} to {{{newDigestShort}}}{{else}}{{#if isMajor}}from {{currentVersion}} to {{newVersion}} (major){{else}}{{#if isSingleVersion}}from {{currentVersion}} to {{newVersion}}{{else}}{{#if newValue}}from {{{currentValue}}} to {{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+  "commitMessageTopic": "{{depName}}",
+  "prBodyColumns": [
+    "Package",
+    "Type",
+    "Change",
+    "Pending",
+    "Age",
+    "Adoption",
+    "Confidence"
+  ],
+  "prBodyNotes": [
+    "{{#if isMajor}}:rotating_light: Be careful, this is a major update.{{/if}}",
+    "{{#if (equals updateType 'minor')}}:warning: This is a minor update.{{/if}}"
+  ],
+  "prConcurrentLimit": 20,
+  "prHourlyLimit": 10,
+  "prTitleStrict": true,
+  "rebaseWhen": "behind-base-branch",
+  "separateMinorPatch": true,
+  "labels": [
+    "dependencies"
+  ],
+  "platformCommit": true,
+  "automergeType": "branch",
+  "ignoreTests": true,
+  "patch": {
+    "groupName": "all patch updates",
+    "automerge": true,
+    "description": "Group and automerge all patch updates together"
+  },
+  "minor": {
+    "dependencyDashboardApproval": true,
+    "description": "Require dashboard approval to create minor PRs"
+  },
+  "major": {
+    "dependencyDashboardApproval": true,
+    "description": "Require dashboard approval to create major PRs"
+  },
+}
