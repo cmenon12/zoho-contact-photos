@@ -1,2 +1,2 @@
-pycookiecheat==0.4.7
+pycookiecheat==0.6.0
 requests==2.31.0
