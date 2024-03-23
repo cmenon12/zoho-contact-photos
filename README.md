@@ -22,9 +22,12 @@ using [Google Takeout](https://takeout.google.com/).
    * These can be downloaded straight from Google Contacts using [Google Takeout](https://takeout.google.com/).
 3. Open Google Chrome/Edge and log into Zoho Mail at [mail.zoho.com](https://mail.zoho.com).
 4. Open a new tab, open the developer tools (F12), and go to the Network tab.
-5. In the new tab visit https://mail.zoho.com/zm/zc/api/v1/accounts/self/contacts and look for the request to the contacts page in the Network tab.
+5. In the new tab visit https://mail.zoho.com/zm/zc/api/v1/accounts/self/contacts and look for the request to the 
+   contacts page in the Network tab (see screenshot below).
 6. Open this request, go to the Headers tab, and under the Request Headers section, copy the Cookie header value.
 7. Run the script, and paste the cookies you copied when prompted.
+
+![Screenshot of the Network tab in the developer tools](devtools.png)
 
 ## Usage
 `python -m update_photos` will run the script. It runs completely in the terminal.
