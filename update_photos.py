@@ -105,22 +105,39 @@ def locate_photo(contact: dict, photo_files: list) -> Tuple[Optional[BinaryIO], 
 
         # If multiple matched then get the user to choose
         elif len(matching) >= 2:
-            print(f"\nMultiple photos were found for {name} with {contact['primary_email_id'] if 'primary_email_id' in contact else 'no email address'}. Please pick one.")
-            for photo in matching:
-                print(f"{matching.index(photo)} - {photo}")
-            choice = -1
-            while choice not in range(0, len(matching)):
-                user_input = input(f"Enter a number from 0 to {len(matching) - 1}. ")
-                try:
-                    choice = int(user_input)
-                except ValueError:
-                    pass
+            choice = choose_photo(
+                f"\nMultiple photos were found for {name} with {contact['primary_email_id'] if 'primary_email_id' in contact else 'no email address'}. Please pick one.",
+                matching
+            )
             photo = open("./%s/%s" % (PHOTOS_FOLDER, matching[choice]), "rb")
             photo_files.remove(matching[choice])
             return photo, photo_files
 
-    else:
-        return None, photo_files
+    return None, photo_files
+
+
+def choose_photo(question: str, matching: list[str]) -> int:
+    """Prompts the user to choose a photo from the list of matching photos.
+
+    :param question: the question to ask the user
+    :type question: str
+    :param matching: the list of matching photos
+    :type matching: list[str]
+    :return: the index of the chosen photo
+    :rtype: int
+    """
+
+    print(question)
+    for photo in matching:
+        print(f"{matching.index(photo)} - {photo}")
+    choice = -1
+    while choice not in range(0, len(matching)):
+        user_input = input(f"Enter a number from 0 to {len(matching) - 1}. ")
+        try:
+            choice = int(user_input)
+        except ValueError:
+            pass
+    return choice
 
 
 def upload_photo(contact: dict, photo: BinaryIO):
