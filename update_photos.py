@@ -4,9 +4,9 @@ This script downloads a list of all the user's contacts from Zoho Mail,
 attempts to locate a photo for each one, and if found it uploads that
 photo to the contact.
 
-It relies on the backdoor solution of using the user's cookies in Chrome
-to grant access to Zoho Mail. This is partly because adding a photo to a
-contact is not part of their
+It relies on the backdoor solution of using the user's cookies to grant
+access to Zoho Mail. This is partly because adding a photo to a contact
+is not part of their
 [official API](https://www.zoho.com/contacts/api/overview.html).
 
 The contact photos are stored in a folder (named `photos` by default)
@@ -47,7 +47,7 @@ def get_cookies(website: str) -> dict[str, str]:
     """
 
     # Get the cookies from the user
-    print(f"Visit {website}, open the DevTools, and type console.log(document.cookie) to get your cookies.")
+    print(f"Open the developer tools in a new tab, visit {website}, and copy the request cookies.")
     cookie_text = input("What are your cookies? ").strip()
 
     # Remove any leading or trailing quotes
@@ -191,8 +191,7 @@ def upload_photo(contact: dict, photo: BinaryIO):
 
 
 def main():
-    """Runs the script to update the photos for all contacts.
-    """
+    """Runs the script to update the photos for all contacts."""
 
     # Get the cookies and save them to a session
     cookies = get_cookies("https://mail.zoho.com/")
