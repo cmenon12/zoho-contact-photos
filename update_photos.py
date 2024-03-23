@@ -79,7 +79,7 @@ def fetch_contacts() -> list:
 
         # Make the request
         print(f"Downloading page {page_number}...")
-        url = f"https://contacts.zoho.com/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
+        url = f"https://mail.zoho.com/zm/zc/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
         response = SESSION.get(url)
         response.raise_for_status()
 
@@ -195,15 +195,11 @@ def main():
     """
 
     # Get the cookies and save them to a session
-    cookies = get_cookies("https://contacts.zoho.com/")
+    cookies = get_cookies("https://mail.zoho.com/")
     SESSION.cookies.update(cookies)
 
     # Get all the contacts
     contacts = fetch_contacts()
-
-    # Get the cookies and save them to a session
-    cookies = get_cookies("https://mail.zoho.com/")
-    SESSION.cookies.update(cookies)
 
     # Keep track of all the photos
     for _, _, files in os.walk("./%s" % PHOTOS_FOLDER):
