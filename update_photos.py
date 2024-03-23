@@ -4,9 +4,9 @@ This script downloads a list of all the user's contacts from Zoho Mail,
 attempts to locate a photo for each one, and if found it uploads that
 photo to the contact.
 
-It relies on the backdoor solution of using the user's cookies in Chrome
-to grant access to Zoho Mail. This is partly because adding a photo to a
-contact is not part of their
+It relies on the backdoor solution of using the user's cookies to grant
+access to Zoho Mail. This is partly because adding a photo to a contact
+is not part of their
 [official API](https://www.zoho.com/contacts/api/overview.html).
 
 The contact photos are stored in a folder (named `photos` by default)
@@ -22,7 +22,6 @@ import os
 from typing import BinaryIO, Optional, Tuple
 
 import requests
-from pycookiecheat import chrome_cookies
 
 __author__ = "Christopher Menon"
 __credits__ = "Christopher Menon"
@@ -34,8 +33,35 @@ PAGE_SIZE = 100
 # The name of the folder with the contact photos
 PHOTOS_FOLDER = "photos"
 
-# The path to the cookie file
-COOKIE_FILE = "/home/chris/.config/google-chrome/Default/Cookies"
+# The session to use for all requests
+SESSION = requests.Session()
+
+
+def get_cookies(website: str) -> dict[str, str]:
+    """Gets the cookies from the user.
+
+    :param website: the website to get the cookies from
+    :type website: str
+    :returns: the cookies
+    :rtype: dict[str, str]
+    """
+
+    # Get the cookies from the user
+    print(f"Open the developer tools in a new tab, visit {website}, and copy the request cookies.")
+    cookie_text = input("What are your cookies? ").strip()
+
+    # Remove any leading or trailing quotes
+    if (cookie_text.startswith('"') and cookie_text.endswith('"')) or \
+        (cookie_text.startswith("'") and cookie_text.endswith("'")):
+        cookie_text = cookie_text[1:-1]
+
+    # Split the cookies into a dictionary
+    cookies = {}
+    for cookie in cookie_text.split("; "):
+        key, value = cookie.split("=", 1)
+        cookies[key] = value
+
+    return cookies
 
 
 def fetch_contacts() -> list:
@@ -53,9 +79,8 @@ def fetch_contacts() -> list:
 
         # Make the request
         print(f"Downloading page {page_number}...")
-        url = f"https://contacts.zoho.com/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
-        cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
-        response = requests.get(url, cookies=cookies)
+        url = f"https://mail.zoho.com/zm/zc/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
+        response = SESSION.get(url)
         response.raise_for_status()
 
         # Save each contact
@@ -151,11 +176,9 @@ def upload_photo(contact: dict, photo: BinaryIO):
 
     # Make the request
     url = f"https://mail.zoho.com/zm/zc/api/v1/accounts/{contact['zid']}/contacts/{contact['contact_id']}/photo"
-    cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
     files = {"photo": photo}
-    headers = {"x-zcsrf-token": f"conreqcsr={cookies['CT_CSRF_TOKEN']}"}
-    response = requests.post(url, cookies=cookies, files=files,
-                             headers=headers)
+    headers = {"x-zcsrf-token": f"conreqcsr={SESSION.cookies['CT_CSRF_TOKEN']}"}
+    response = SESSION.post(url, files=files, headers=headers)
     response.raise_for_status()
 
     # Inform the user if it was successful
@@ -168,8 +191,11 @@ def upload_photo(contact: dict, photo: BinaryIO):
 
 
 def main():
-    """Runs the script to update the photos for all contacts.
-    """
+    """Runs the script to update the photos for all contacts."""
+
+    # Get the cookies and save them to a session
+    cookies = get_cookies("https://mail.zoho.com/")
+    SESSION.cookies.update(cookies)
 
     # Get all the contacts
     contacts = fetch_contacts()
