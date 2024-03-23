@@ -33,16 +33,21 @@ PAGE_SIZE = 100
 # The name of the folder with the contact photos
 PHOTOS_FOLDER = "photos"
 
+# The session to use for all requests
+SESSION = requests.Session()
 
-def get_cookies() -> dict[str, str]:
+
+def get_cookies(website: str) -> dict[str, str]:
     """Gets the cookies from the user.
 
+    :param website: the website to get the cookies from
+    :type website: str
     :returns: the cookies
     :rtype: dict[str, str]
     """
 
     # Get the cookies from the user
-    print("Visit https://mail.zoho.com, open the DevTools, and type console.log(document.cookie) to get your cookies.")
+    print(f"Visit {website}, open the DevTools, and type console.log(document.cookie) to get your cookies.")
     cookie_text = input("What are your cookies? ").strip()
 
     # Remove any leading or trailing quotes
@@ -59,11 +64,9 @@ def get_cookies() -> dict[str, str]:
     return cookies
 
 
-def fetch_contacts(cookies: dict[str, str]) -> list:
+def fetch_contacts() -> list:
     """Fetches all the user's Zoho contacts.
 
-    :param cookies: the cookies to use for the request
-    :type cookies: dict[str, str]
     :returns: all the contacts from Zoho.
     :rtype: list
     """
@@ -77,7 +80,7 @@ def fetch_contacts(cookies: dict[str, str]) -> list:
         # Make the request
         print(f"Downloading page {page_number}...")
         url = f"https://contacts.zoho.com/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
-        response = requests.get(url, cookies=cookies)
+        response = SESSION.get(url)
         response.raise_for_status()
 
         # Save each contact
@@ -162,11 +165,9 @@ def choose_photo(question: str, matching: list[str]) -> int:
     return choice
 
 
-def upload_photo(cookies: dict[str, str],contact: dict, photo: BinaryIO):
+def upload_photo(contact: dict, photo: BinaryIO):
     """Adds the photo to the contact on Zoho Contacts.
 
-    :param cookies: the cookies to use for the request
-    :type cookies: dict[str, str]
     :param contact: the contact to upload the photo for
     :type contact: dict
     :param photo: the photo to upload
@@ -176,9 +177,8 @@ def upload_photo(cookies: dict[str, str],contact: dict, photo: BinaryIO):
     # Make the request
     url = f"https://mail.zoho.com/zm/zc/api/v1/accounts/{contact['zid']}/contacts/{contact['contact_id']}/photo"
     files = {"photo": photo}
-    headers = {"x-zcsrf-token": f"conreqcsr={cookies['CT_CSRF_TOKEN']}"}
-    response = requests.post(url, cookies=cookies, files=files,
-                             headers=headers)
+    headers = {"x-zcsrf-token": f"conreqcsr={SESSION.cookies['CT_CSRF_TOKEN']}"}
+    response = SESSION.post(url, files=files, headers=headers)
     response.raise_for_status()
 
     # Inform the user if it was successful
@@ -194,10 +194,16 @@ def main():
     """Runs the script to update the photos for all contacts.
     """
 
-    cookies = get_cookies()
+    # Get the cookies and save them to a session
+    cookies = get_cookies("https://contacts.zoho.com/")
+    SESSION.cookies.update(cookies)
 
     # Get all the contacts
-    contacts = fetch_contacts(cookies)
+    contacts = fetch_contacts()
+
+    # Get the cookies and save them to a session
+    cookies = get_cookies("https://mail.zoho.com/")
+    SESSION.cookies.update(cookies)
 
     # Keep track of all the photos
     for _, _, files in os.walk("./%s" % PHOTOS_FOLDER):
@@ -210,7 +216,7 @@ def main():
 
             # If the photo was found then upload it, otherwise skip it
             if photo is not None:
-                upload_photo(cookies, contact, photo)
+                upload_photo(contact, photo)
                 photos_uploaded += 1
             else:
                 print(f"No photo found for {contact['first_name']} {contact['last_name']}")
