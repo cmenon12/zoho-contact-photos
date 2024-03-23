@@ -38,6 +38,31 @@ PHOTOS_FOLDER = "photos"
 COOKIE_FILE = "/home/chris/.config/google-chrome/Default/Cookies"
 
 
+def get_cookies() -> dict[str, str]:
+    """Gets the cookies from the user.
+
+    :returns: the cookies
+    :rtype: dict[str, str]
+    """
+
+    # Get the cookies from the user
+    print("Visit https://mail.zoho.com, open the DevTools, and type console.log(document.cookie) to get your cookies.")
+    cookie_text = input("What are your cookies? ").strip()
+
+    # Remove any leading or trailing quotes
+    if (cookie_text.startswith('"') and cookie_text.endswith('"')) or \
+        (cookie_text.startswith("'") and cookie_text.endswith("'")):
+        cookie_text = cookie_text[1:-1]
+
+    # Split the cookies into a dictionary
+    cookies = {}
+    for cookie in cookie_text.split("; "):
+        key, value = cookie.split("=", 1)
+        cookies[key] = value
+
+    return cookies
+
+
 def fetch_contacts() -> list:
     """Fetches all the user's Zoho contacts.
 
