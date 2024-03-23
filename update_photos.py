@@ -22,7 +22,6 @@ import os
 from typing import BinaryIO, Optional, Tuple
 
 import requests
-from pycookiecheat import chrome_cookies
 
 __author__ = "Christopher Menon"
 __credits__ = "Christopher Menon"
@@ -33,9 +32,6 @@ PAGE_SIZE = 100
 
 # The name of the folder with the contact photos
 PHOTOS_FOLDER = "photos"
-
-# The path to the cookie file
-COOKIE_FILE = "/home/chris/.config/google-chrome/Default/Cookies"
 
 
 def get_cookies() -> dict[str, str]:
@@ -63,9 +59,11 @@ def get_cookies() -> dict[str, str]:
     return cookies
 
 
-def fetch_contacts() -> list:
+def fetch_contacts(cookies: dict[str, str]) -> list:
     """Fetches all the user's Zoho contacts.
 
+    :param cookies: the cookies to use for the request
+    :type cookies: dict[str, str]
     :returns: all the contacts from Zoho.
     :rtype: list
     """
@@ -79,7 +77,6 @@ def fetch_contacts() -> list:
         # Make the request
         print(f"Downloading page {page_number}...")
         url = f"https://contacts.zoho.com/api/v1/accounts/self/contacts?page={page_number}&per_page={PAGE_SIZE}&include=emails.primary"
-        cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
         response = requests.get(url, cookies=cookies)
         response.raise_for_status()
 
@@ -165,9 +162,11 @@ def choose_photo(question: str, matching: list[str]) -> int:
     return choice
 
 
-def upload_photo(contact: dict, photo: BinaryIO):
+def upload_photo(cookies: dict[str, str],contact: dict, photo: BinaryIO):
     """Adds the photo to the contact on Zoho Contacts.
 
+    :param cookies: the cookies to use for the request
+    :type cookies: dict[str, str]
     :param contact: the contact to upload the photo for
     :type contact: dict
     :param photo: the photo to upload
@@ -176,7 +175,6 @@ def upload_photo(contact: dict, photo: BinaryIO):
 
     # Make the request
     url = f"https://mail.zoho.com/zm/zc/api/v1/accounts/{contact['zid']}/contacts/{contact['contact_id']}/photo"
-    cookies = chrome_cookies(url, cookie_file=COOKIE_FILE)
     files = {"photo": photo}
     headers = {"x-zcsrf-token": f"conreqcsr={cookies['CT_CSRF_TOKEN']}"}
     response = requests.post(url, cookies=cookies, files=files,
@@ -196,8 +194,10 @@ def main():
     """Runs the script to update the photos for all contacts.
     """
 
+    cookies = get_cookies()
+
     # Get all the contacts
-    contacts = fetch_contacts()
+    contacts = fetch_contacts(cookies)
 
     # Keep track of all the photos
     for _, _, files in os.walk("./%s" % PHOTOS_FOLDER):
@@ -210,7 +210,7 @@ def main():
 
             # If the photo was found then upload it, otherwise skip it
             if photo is not None:
-                upload_photo(contact, photo)
+                upload_photo(cookies, contact, photo)
                 photos_uploaded += 1
             else:
                 print(f"No photo found for {contact['first_name']} {contact['last_name']}")
