@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>cmenon12/renovate-config(zoho-contact-photos)"
+    "github>cmenon12/config(zoho-contact-photos)"
   ],
   "schedule": "every 3 months on the first day of the month"
 }
