@@ -47,7 +47,7 @@ def get_cookies(website: str) -> dict[str, str]:
     """
 
     # Get the cookies from the user
-    print(f"Open the developer tools in a new tab, visit {website}, and copy the request cookies.")
+    print(f"Open the developer tools in a new tab, visit {website}, and copy the Cookie header from the request.")
     cookie_text = input("What are your cookies? ").strip()
 
     # Remove any leading or trailing quotes
@@ -194,7 +194,7 @@ def main():
     """Runs the script to update the photos for all contacts."""
 
     # Get the cookies and save them to a session
-    cookies = get_cookies("https://mail.zoho.com/")
+    cookies = get_cookies("https://mail.zoho.com/zm/zc/api/v1/accounts/self/contacts")
     SESSION.cookies.update(cookies)
 
     # Get all the contacts
